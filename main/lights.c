@@ -31,8 +31,17 @@ static uint32_t taskDelay;
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
-#define PIXEL_COUNT 40
+#define PIXEL_COUNT 75
 #define NEOPIXEL_PIN GPIO_NUM_12
+
+static const int SEGMENT[][2] = {
+    {1, 14},
+    {14, 23},
+    {24, 38},
+    {39, 52},
+    {53, 62},
+    {63, 75},
+};
 
 void queue_led_event(const char *json)
 {
@@ -61,6 +70,7 @@ void queue_led_event(const char *json)
         }
         cJSON_Delete(root);
     }
+    ESP_LOGI(TAG, "Queued event");
 }
 
 static void blink_led(int count, int delay)
@@ -104,14 +114,14 @@ static void neopixel_flash(int start, int end, int iterations, uint32_t colorOn,
     for (int i = 0; i < iterations; i++)
     {
         neopixel_SetPixel(neopixel, pixelsOn, ARRAY_SIZE(pixelsOn));
-        vTaskDelay(taskDelay + 5);
+        vTaskDelay(taskDelay + 50 / portTICK_PERIOD_MS);
 
         neopixel_SetPixel(neopixel, pixelsOff, ARRAY_SIZE(pixelsOff));
-        vTaskDelay(taskDelay + 5);
+        vTaskDelay(taskDelay + 50 / portTICK_PERIOD_MS);
     }
 
     neopixel_SetPixel(neopixel, pixelsClear, ARRAY_SIZE(pixelsClear));
-    vTaskDelay(taskDelay);
+    // vTaskDelay(taskDelay);
 }
 
 static void neopixel_bar(int barSize, int start, int end, uint32_t colorOn, uint32_t colorOff)
@@ -155,20 +165,21 @@ static void lights_task(void *pvParameters)
     blink_event_t event;
     while (1)
     {
-        if (xQueueReceive(lights_queue, &event, portMAX_DELAY) == pdTRUE)
+        if (xQueueReceive(lights_queue, &event, 30 / portTICK_PERIOD_MS) == pdTRUE)
         {
+            ESP_LOGI(TAG, "Got event from queue");
+            int segment = event.segment - 1;
             if (strcmp(event.type, "mining.submit") == 0)
             {
-                neopixel_bar(event.segment, 1, 20, NP_RGB(0, 50, 0), NP_RGB(0, 0, 0));
-                // blink_led(1, 100);
+                neopixel_bar(2, SEGMENT[segment][0], SEGMENT[segment][1], NP_RGB(0, 50, 0), NP_RGB(0, 0, 0));
             }
             else if (strcmp(event.type, "mining.notify") == 0)
             {
-                neopixel_flash(1, event.segment, 5, NP_RGB(227, 218, 52), NP_RGB(0, 0, 0));
+                neopixel_flash(SEGMENT[segment][0], SEGMENT[segment][1], 5, NP_RGB(227, 218, 52), NP_RGB(0, 0, 0));
             }
             else if (strcmp(event.type, "tx") == 0)
             {
-                neopixel_flash(3, 20, 5, NP_RGB(255, 153, 0), NP_RGB(0, 0, 0));
+                neopixel_flash(1, PIXEL_COUNT, 5, NP_RGB(255, 153, 0), NP_RGB(0, 0, 0));
             }
             else if (strcmp(event.type, "block") == 0)
             {
