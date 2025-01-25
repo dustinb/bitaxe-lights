@@ -1,0 +1,28 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.openOcdConfigs": [
+    "interface/ftdi/esp32_devkitj_v1.cfg",
+    "target/esp32.cfg"
+  ],
+  "idf.port": "/dev/tty.usbserial-0001",
+  "idf.flashType": "UART",
+  "cSpell.words": [
+    "espressif",
+    "joho",
+    "LOGW",
+    "netif",
+    "rawblock",
+    "rawtx",
+    "SRCS",
+    "zmqpubrawblock",
+    "zmqpubrawtx"
+  ],
+  "files.associations": {
+    "esp_log_internal.h": "c",
+    "freertos.h": "c",
+    "esp_http_client.h": "c",
+    "freertosconfig.h": "c",
+    "format": "c",
+    "thread": "c"
+  }
+}
