@@ -22,10 +22,32 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
         ESP_LOGI(TAG, "WEBSOCKET_EVENT_DISCONNECTED");
         break;
     case WEBSOCKET_EVENT_DATA:
-        ESP_LOGI(TAG, "Received websocket data");
-        if (data->op_code == 0x01 || data->op_code == 0x02)
-        { // Text or Binary frame
-            queue_led_event(data->data_ptr);
+        if (data->op_code == 0x01 || data->op_code == 0x02) // Text or Binary frame
+        {
+            cJSON *root = cJSON_Parse(data->data_ptr);
+            if (root)
+            {
+                blink_event_t event = {0};
+                cJSON *type = cJSON_GetObjectItem(root, "type");
+                cJSON *segment = cJSON_GetObjectItem(root, "segment");
+                cJSON *value = cJSON_GetObjectItem(root, "value");
+                if (type && segment)
+                {
+                    ESP_LOGW(TAG, "Type: %s, Segment: %d, Value: %lld",
+                             type->valuestring, segment->valueint,
+                             value ? (int64_t)value->valuedouble : 0);
+
+                    strncpy(event.type, type->valuestring, sizeof(event.type) - 1);
+                    event.segment = segment->valueint;
+                    event.value = value ? (int64_t)value->valuedouble : 0;
+                    queue_lights_event(event);
+                }
+                cJSON_Delete(root);
+            }
+            else
+            {
+                ESP_LOGE(TAG, "Failed to parse JSON");
+            }
         }
         break;
     case WEBSOCKET_EVENT_ERROR:

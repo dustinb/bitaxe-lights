@@ -11,7 +11,7 @@ import (
 func main() {
 	godotenv.Load(".env")
 
-	// All messages sent to this channel are broadcast to all clients
+	// Messages sent to this channel are broadcast to all clients
 	Broadcast := make(chan lib.Message)
 
 	// Our connected clients (should be the Lights Controller)
@@ -34,6 +34,8 @@ func main() {
 	for _, bitaxe := range bitaxes {
 		go lib.ConnectToBitaxe(bitaxe, Broadcast)
 	}
+
+	go lib.StartPriceProvider(Broadcast)
 
 	lib.StartZMQ(Broadcast)
 }

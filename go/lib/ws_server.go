@@ -13,7 +13,7 @@ import (
 type Message struct {
 	Segment int    `json:"segment"`
 	Type    string `json:"type"`
-	Value   string `json:"value"`
+	Value   int64  `json:"value"`
 }
 
 type MessageClient interface {

@@ -3,7 +3,6 @@ package lib
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -60,7 +59,7 @@ func StartZMQ(Broadcast chan<- Message) {
 				message := Message{
 					Segment: 7,
 					Type:    "tx",
-					Value:   fmt.Sprintf("%d", satoshis),
+					Value:   satoshis,
 				}
 				Broadcast <- message
 			}
