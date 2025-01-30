@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/joho/godotenv"
 	"oldbute.com/axe_lights/lib"
@@ -29,13 +30,20 @@ func main() {
 
 	go lib.StartWebsocketServer(hub)
 
-	bitaxes := lib.ScanNetwork()
-	log.Printf("Found %d Bitaxes", len(bitaxes))
-	for _, bitaxe := range bitaxes {
-		go lib.ConnectToBitaxe(bitaxe, Broadcast)
-	}
-
 	go lib.StartPriceProvider(Broadcast)
 
-	lib.StartZMQ(Broadcast)
+	go lib.StartZMQ(Broadcast)
+
+	for {
+		ctx, cancel := context.WithCancel(context.Background())
+		bitaxes := lib.ScanNetwork()
+		log.Printf("Found %d Bitaxes", len(bitaxes))
+		for _, bitaxe := range bitaxes {
+			go lib.ConnectToBitaxe(bitaxe, Broadcast, ctx)
+		}
+
+		// re-scan every x minutes
+		time.Sleep(time.Minute * 5)
+		cancel() // This will signal all ConnectToBitaxe goroutines to stop
+	}
 }

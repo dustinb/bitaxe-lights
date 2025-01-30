@@ -55,7 +55,7 @@ func StartZMQ(Broadcast chan<- Message) {
 			txHashes[string(hash)] = true
 			txHashesMutex.Unlock()
 
-			if satoshis/BITCOIN > 10 {
+			if satoshis/BITCOIN > 5 {
 				message := Message{
 					Segment: 7,
 					Type:    "tx",

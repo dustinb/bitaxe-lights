@@ -5,35 +5,34 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/coder/websocket"
 )
 
-func ConnectToBitaxe(bitaxe Bitaxe, broadcast chan<- Message) {
+func ConnectToBitaxe(bitaxe Bitaxe, broadcast chan<- Message, ctx context.Context) {
 
-	var connects int
-	for connects < 10 {
-		connects++
+	// Websocket context
+	wsCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		url := fmt.Sprintf("ws://%s/api/ws", bitaxe.IP)
-		c, _, err := websocket.Dial(ctx, url, nil)
-		if err != nil {
-			log.Printf("Dial error: %v", err)
-			time.Sleep(time.Second * 10)
-			continue
-		}
-		defer c.CloseNow()
+	url := fmt.Sprintf("ws://%s/api/ws", bitaxe.IP)
+	c, _, err := websocket.Dial(wsCtx, url, nil)
+	if err != nil {
+		log.Printf("Dial error: %v", err)
+		return
+	}
+	defer c.CloseNow()
 
-		for {
-			_, msg, err := c.Read(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			_, msg, err := c.Read(wsCtx)
 			if err != nil {
 				log.Printf("websocket error: %v", err)
 				c.CloseNow()
-				time.Sleep(time.Second * 10)
-				break
+				return
 			}
 			var msgType string
 			if strings.Contains(string(msg), "mining.submit") {

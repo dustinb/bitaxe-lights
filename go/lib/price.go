@@ -36,7 +36,7 @@ func StartPriceProvider(Broadcast chan<- Message) {
 		price := data.BPI.USD.RateFloat
 		Broadcast <- Message{Segment: 7, Type: "price", Value: int64(price)}
 		resp.Body.Close()
-		time.Sleep(10 * time.Minute)
+		time.Sleep(5 * time.Minute)
 	}
 
 }
