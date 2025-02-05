@@ -32,7 +32,7 @@ static uint32_t taskDelay;
 #define PIXEL_COUNT 75
 #define NEOPIXEL_PIN GPIO_NUM_12
 
-static const uint32_t COLOR_BITCOIN_ORANGE = NP_RGB(150, 90, 0);
+// static const uint32_t COLOR_BITCOIN_ORANGE = NP_RGB(150, 90, 0);
 static const uint32_t COLOR_BITCOIN_YELLOW = NP_RGB(130, 96, 0);
 static const uint32_t COLOR_WHITE = NP_RGB(120, 120, 120);
 static const uint32_t COLOR_RED = NP_RGB(214, 17, 37);
@@ -47,7 +47,7 @@ static int64_t lastPrice = 0;
 static const int SEGMENT[][2] = {
     {0, 13},
     {13, 24},
-    {24, 37},
+    {24, 36},
     {37, 50},
     {50, 60},
     {61, 74},
@@ -86,6 +86,8 @@ void queue_lights_event(const blink_event_t event)
 static void lights_task(void *pvParameters)
 {
     blink_event_t event;
+    int64_t value = 0;
+    const int64_t SATOSHIS_PER_BITCOIN = 100000000; // Define constant
     while (1)
     {
         if (xQueueReceive(lights_queue, &event, 800 / portTICK_PERIOD_MS) == pdTRUE)
@@ -94,7 +96,6 @@ static void lights_task(void *pvParameters)
             if (strcmp(event.type, "mining.submit") == 0)
             {
                 neopixel_on(SEGMENT[segment][0], SEGMENT[segment][1], COLOR_BITCOIN_YELLOW);
-                // neopixel_bar(2, SEGMENT[segment][0], SEGMENT[segment][1], COLOR_BITCOIN_YELLOW, COLOR_BITCOIN_YELLOW);
                 neopixel_flash(SEGMENT[segment][0], SEGMENT[segment][1], 1, COLOR_BITCOIN_YELLOW, NP_RGB(0, 0, 0));
             }
             else if (strcmp(event.type, "mining.notify") == 0)
@@ -103,9 +104,10 @@ static void lights_task(void *pvParameters)
             }
             else if (strcmp(event.type, "tx") == 0)
             {
-                neopixel_bar(10, 1, PIXEL_COUNT, COLOR_BITCOIN_ORANGE, COLOR_OFF, 0);
-                // neopixel_flash(1, PIXEL_COUNT, 5, COLOR_BITCOIN_ORANGE, COLOR_OFF);
-                // neopixel_police(10);
+                neopixel_bar(10, 1, PIXEL_COUNT, COLOR_GREEN, COLOR_OFF, 0);
+                value = event.value / SATOSHIS_PER_BITCOIN;
+                ESP_LOGI(TAG, "Transaction value: %lld BTC", value);
+                neopixel_flash(0, PIXEL_COUNT, 2, COLOR_GREEN, COLOR_OFF);
             }
             else if (strcmp(event.type, "price") == 0)
             {
@@ -121,8 +123,8 @@ static void lights_task(void *pvParameters)
             }
             else if (strcmp(event.type, "block") == 0)
             {
-                neopixel_bar(10, 1, PIXEL_COUNT, COLOR_WHITE, COLOR_OFF, 0);
-                neopixel_flash(1, PIXEL_COUNT, 10, COLOR_WHITE, COLOR_OFF);
+                neopixel_bar(10, 0, PIXEL_COUNT, COLOR_WHITE, COLOR_OFF, 0);
+                neopixel_flash(0, PIXEL_COUNT, 10, COLOR_WHITE, COLOR_OFF);
             }
         }
     }

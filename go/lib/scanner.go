@@ -41,7 +41,7 @@ const DHCP_END = 249
 
 func GetSystemInfo(ip string) Info {
 	client := http.Client{}
-	client.Timeout = 2 * time.Second
+	client.Timeout = 5 * time.Second
 	resp, err := client.Get("http://" + ip + "/api/system/info")
 	if err != nil {
 		return Info{}
@@ -54,7 +54,7 @@ func GetSystemInfo(ip string) Info {
 
 // ScanNetwork scans the network for the Bitaxe
 func ScanNetwork() []Bitaxe {
-	var bitaxes []Bitaxe
+	var bitaxes = make(map[string]Bitaxe)
 	var mutex sync.Mutex
 	var waitgroup sync.WaitGroup
 
@@ -77,7 +77,6 @@ func ScanNetwork() []Bitaxe {
 			ip := fmt.Sprintf(network, i)
 			waitgroup.Add(1)
 			go func() {
-				log.Printf("Scanning %s", ip)
 				defer waitgroup.Done()
 				info := GetSystemInfo(ip)
 				if info.Hostname != "" {
@@ -87,7 +86,7 @@ func ScanNetwork() []Bitaxe {
 						segment, _ = strconv.Atoi(matches[1])
 						bitaxe := Bitaxe{IP: ip, Hostname: info.Hostname, MacAddr: info.MacAddr, Segment: segment}
 						mutex.Lock()
-						bitaxes = append(bitaxes, bitaxe)
+						bitaxes[ip] = bitaxe
 						mutex.Unlock()
 					}
 				}
@@ -95,5 +94,9 @@ func ScanNetwork() []Bitaxe {
 		}
 	}
 	waitgroup.Wait()
-	return bitaxes
+	final := []Bitaxe{}
+	for _, bitaxe := range bitaxes {
+		final = append(final, bitaxe)
+	}
+	return final
 }
