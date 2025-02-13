@@ -30,7 +30,7 @@ func main() {
 
 	go lib.StartWebsocketServer(hub)
 
-	go lib.StartPriceProvider(Broadcast)
+	go lib.BlockChainPriceProvider(Broadcast)
 
 	go lib.StartZMQ(Broadcast)
 
