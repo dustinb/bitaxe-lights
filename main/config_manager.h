@@ -3,10 +3,14 @@
 
 #include <stdbool.h>
 
+#define MAX_SSID_LENGTH 32
+#define MAX_PASSWORD_LENGTH 64
+#define MAX_WEBSOCKET_LENGTH 128
+
 typedef struct {
-    char wifi_ssid[32];
-    char wifi_password[64];
-    char websocket_server[128];
+    char wifi_ssid[MAX_SSID_LENGTH];
+    char wifi_password[MAX_PASSWORD_LENGTH];
+    char websocket_server[MAX_WEBSOCKET_LENGTH];
 } device_config_t;
 
 void config_manager_init(void);

@@ -2,8 +2,11 @@
 #include "websocket.h"
 #include "esp_log.h"
 #include "esp_system.h"
-#include "wifi_creds.h"
 #include "esp_event_base.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+#include "config_manager.h"
+#include <string.h>
 
 static const char *TAG = "WIFI_MANAGER";
 
@@ -28,6 +31,12 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
 
 void wifi_init_sta(void)
 {
+    device_config_t config;
+    if (!config_manager_load(&config)) {
+        ESP_LOGE(TAG, "Failed to load WiFi configuration");
+        return;
+    }
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
@@ -41,14 +50,16 @@ void wifi_init_sta(void)
 
     wifi_config_t wifi_config = {
         .sta = {
-            .ssid = WIFI_SSID,
-            .password = WIFI_PASS,
             .threshold.rssi = -127,
             .pmf_cfg = {
                 .capable = true,
                 .required = false},
         },
     };
+
+    // Copy the SSID and password from the stored configuration
+    strncpy((char *)wifi_config.sta.ssid, config.wifi_ssid, sizeof(wifi_config.sta.ssid));
+    strncpy((char *)wifi_config.sta.password, config.wifi_password, sizeof(wifi_config.sta.password));
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));

@@ -7,6 +7,10 @@
 #include "esp_event.h"
 #include "esp_http_server.h"
 #include "esp_system.h"
+#include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/timers.h"
 #include <string.h>
 #include <sys/param.h>
 
@@ -116,6 +120,37 @@ static httpd_uri_t save = {
     .user_ctx = NULL
 };
 
+#define BUTTON_GPIO GPIO_NUM_0  // Boot button on most ESP32 boards
+#define LONG_PRESS_TIME_MS 300  // 3 seconds for long press
+
+static TimerHandle_t button_timer = NULL;
+static bool button_pressed = false;
+
+static void button_timer_callback(TimerHandle_t xTimer)
+{
+    if (button_pressed) {
+        ESP_LOGI(TAG, "Long press detected, clearing configuration");
+        nvs_handle_t handle;
+        ESP_ERROR_CHECK(nvs_open(CONFIG_NAMESPACE, NVS_READWRITE, &handle));
+        ESP_ERROR_CHECK(nvs_erase_all(handle));
+        ESP_ERROR_CHECK(nvs_commit(handle));
+        nvs_close(handle);
+        ESP_LOGI(TAG, "Configuration cleared, restarting...");
+        esp_restart();
+    }
+}
+
+static void IRAM_ATTR button_isr_handler(void* arg)
+{
+    if (gpio_get_level(BUTTON_GPIO) == 0) {  // Button pressed (active low)
+        button_pressed = true;
+        xTimerStart(button_timer, 0);
+    } else {  // Button released
+        button_pressed = false;
+        xTimerStop(button_timer, 0);
+    }
+}
+
 void config_manager_init(void)
 {
     esp_err_t ret = nvs_flash_init();
@@ -124,6 +159,21 @@ void config_manager_init(void)
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    // Setup button for long-press detection
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << BUTTON_GPIO),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_ANYEDGE
+    };
+    gpio_config(&io_conf);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(BUTTON_GPIO, button_isr_handler, NULL);
+
+    // Create timer for long-press detection
+    button_timer = xTimerCreate("button_timer", pdMS_TO_TICKS(LONG_PRESS_TIME_MS), pdFALSE, NULL, button_timer_callback);
 
     if (!config_manager_is_configured()) {
         config_manager_start_ap();
