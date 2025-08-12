@@ -2,6 +2,18 @@
 
 Inspired by the Bithalo https://github.com/IamGPIO/BitHalo-201-204-Bitaxe
 
+The 6 pack running https://www.youtube.com/live/OFx2tDsFcT4
+
+# Events
+
+There are 5 different lighting events
+
+  * Submit Share
+  * Mining Notify
+  * BTC Transaction > 5 BTC
+  * New Bitcoin Block
+  * BTC Price Up/Down
+
 # Operation
 
 There are 6 LED segments using NeoPixel LEDs.  The network is scanned for Bitaxe devices with hostname containing _led1, _led2, etc.  A web socket is opened to each device to identify mining.submit and mining.notify events.  A small go program is used to listen these events.

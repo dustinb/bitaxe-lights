@@ -19,6 +19,32 @@ type blockchainResponse struct {
 	Price float64 `json:"last_trade_price"`
 }
 
+type coinGekkoResponse struct {
+	Bitcoin struct {
+		USD float64 `json:"usd"`
+	} `json:"bitcoin"`
+}
+
+func CoinGekkoPriceProvider(Broadcast chan<- Message) {
+	for {
+		resp, err := http.Get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+		if err != nil {
+			log.Printf("Error getting price: %v", err)
+			continue
+		}
+		var data coinGekkoResponse
+		err = json.NewDecoder(resp.Body).Decode(&data)
+		if err != nil {
+			log.Printf("Error decoding price: %v", err)
+			continue
+		}
+		price := data.Bitcoin.USD
+		Broadcast <- Message{Segment: 7, Type: "price", Value: int64(price)}
+		resp.Body.Close()
+		time.Sleep(5 * time.Minute)
+	}
+}
+
 func BlockChainPriceProvider(Broadcast chan<- Message) {
 	for {
 		resp, err := http.Get("https://api.blockchain.com/v3/exchange/tickers/BTC-USD")
