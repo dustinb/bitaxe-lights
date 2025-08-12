@@ -25,6 +25,8 @@ type coinGekkoResponse struct {
 	} `json:"bitcoin"`
 }
 
+// CoinGekkoPriceProvider gets the bitcoin price from CoinGecko API using free tier which seems
+// to be 5 to 15 API requests per minute.
 func CoinGekkoPriceProvider(Broadcast chan<- Message) {
 	for {
 		resp, err := http.Get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
@@ -41,7 +43,7 @@ func CoinGekkoPriceProvider(Broadcast chan<- Message) {
 		price := data.Bitcoin.USD
 		Broadcast <- Message{Segment: 7, Type: "price", Value: int64(price)}
 		resp.Body.Close()
-		time.Sleep(5 * time.Minute)
+		time.Sleep(2 * time.Minute)
 	}
 }
 
