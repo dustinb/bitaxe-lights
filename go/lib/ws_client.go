@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/coder/websocket"
@@ -23,6 +25,10 @@ func ConnectToBitaxe(bitaxe Bitaxe, broadcast chan<- Message, ctx context.Contex
 	}
 	defer c.CloseNow()
 
+	// Last known difficulty for this Bitaxe
+	var difficulty int64
+	diffRegEx := regexp.MustCompile(`diff (\d+)`)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -34,19 +40,37 @@ func ConnectToBitaxe(bitaxe Bitaxe, broadcast chan<- Message, ctx context.Contex
 				c.CloseNow()
 				return
 			}
-			var msgType string
-			if strings.Contains(string(msg), "mining.submit") {
-				msgType = "mining.submit"
-			} else if strings.Contains(string(msg), "mining.notify") {
-				msgType = "mining.notify"
-			}
-			if msgType != "" {
-				message := Message{
-					Segment: bitaxe.Segment,
-					Type:    msgType,
+
+			// Store and broadcast the last known difficulty found
+			if strings.Contains(string(msg), "asic_result") {
+				matches := diffRegEx.FindStringSubmatch(string(msg))
+				if len(matches) > 1 {
+					difficulty, _ = strconv.ParseInt(matches[1], 10, 64)
+					broadcast <- Message{
+						Segment: bitaxe.Segment,
+						Type:    "asic_result",
+						Value:   difficulty,
+					}
 				}
-				broadcast <- message
+				continue
 			}
+
+			if strings.Contains(string(msg), "mining.submit") {
+				broadcast <- Message{
+					Segment: bitaxe.Segment,
+					Type:    "mining.submit",
+					Value:   difficulty,
+				}
+				continue
+			}
+
+			if strings.Contains(string(msg), "mining.notify") {
+				broadcast <- Message{
+					Segment: bitaxe.Segment,
+					Type:    "mining.notify",
+				}
+			}
+
 		}
 	}
 }
