@@ -4,6 +4,8 @@ Inspired by the Bithalo https://github.com/IamGPIO/BitHalo-201-204-Bitaxe
 
 The 6 pack running https://www.youtube.com/live/OFx2tDsFcT4
 
+<img width="915" height="542" alt="image" src="https://github.com/user-attachments/assets/342fb014-2e80-43d2-b3f2-03a1550551ae" />
+
 # Events
 
 There are 5 different lighting events
